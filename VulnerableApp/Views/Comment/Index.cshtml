@@ -1,0 +1,39 @@
+@model List<string>
+
+@{
+    ViewData["Title"] = "Comentarios";
+}
+
+<h2>Comentarios</h2>
+
+<form method="post" action="/Comment/AddComment">
+    <div>
+        <label for="comment">Escribe un comentario:</label>
+    </div>
+
+    <div>
+        <textarea
+            id="comment"
+            name="comment"
+            rows="4"
+            cols="50"
+            required></textarea>
+    </div>
+
+    <div>
+        <button type="submit">Comentar</button>
+    </div>
+</form>
+
+<hr />
+
+<div id="comments">
+    @foreach (var comment in Model ?? new List<string>())
+    {
+        <div class="comment">
+            @comment
+        </div>
+
+        <hr />
+    }
+</div>
