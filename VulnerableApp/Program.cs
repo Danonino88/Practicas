@@ -1,4 +1,4 @@
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using VulnerableApp.Data;
 var builder = WebApplication.CreateBuilder(args);
 
@@ -36,4 +36,4 @@ app.MapControllerRoute(
     .WithStaticAssets();
 
 
-app.Run();
+await app.RunAsync();

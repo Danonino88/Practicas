@@ -1,5 +1,4 @@
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using VulnerableApp.Data;
 
@@ -22,33 +21,28 @@ namespace VulnerableApp.Controllers
         [HttpPost]
         public IActionResult Login(string username, string password)
         {
-            if (username == "admin" && password == "admin")
+            if (string.IsNullOrWhiteSpace(username) ||
+                string.IsNullOrWhiteSpace(password))
             {
-                HttpContext.Session.SetString("User", username);
-                HttpContext.Session.SetInt32("UserId", 1);
-
-                return RedirectToAction("Dashboard");
+                ViewBag.Error = "Credenciales inválidas";
+                return View();
             }
 
-            string query =
-                "SELECT * FROM Users WHERE Username = '" +
-                username +
-                "' AND Password = '" +
-                password +
-                "'";
+            var user = _db.Users
+                .AsNoTracking()
+                .FirstOrDefault(u => u.Username == username);
 
-            var user = _db.Users.FromSqlRaw(query).FirstOrDefault();
-
-            if (user != null)
+            if (user == null ||
+                !BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
             {
-                HttpContext.Session.SetString("User", user.Username);
-                HttpContext.Session.SetInt32("UserId", user.Id);
-
-                return RedirectToAction("Dashboard");
+                ViewBag.Error = "Credenciales inválidas";
+                return View();
             }
 
-            ViewBag.Error = "Usuario/contraseña inválido";
-            return View();
+            HttpContext.Session.SetString("User", user.Username);
+            HttpContext.Session.SetInt32("UserId", user.Id);
+
+            return RedirectToAction(nameof(Dashboard));
         }
 
         public IActionResult Dashboard()
@@ -56,9 +50,19 @@ namespace VulnerableApp.Controllers
             var userId = HttpContext.Session.GetInt32("UserId");
 
             if (!userId.HasValue)
-                return RedirectToAction("Login");
+            {
+                return RedirectToAction(nameof(Login));
+            }
 
-            var user = _db.Users.Find(userId.Value);
+            var user = _db.Users
+                .AsNoTracking()
+                .FirstOrDefault(u => u.Id == userId.Value);
+
+            if (user == null)
+            {
+                HttpContext.Session.Clear();
+                return RedirectToAction(nameof(Login));
+            }
 
             return View(user);
         }
@@ -66,7 +70,7 @@ namespace VulnerableApp.Controllers
         public IActionResult Logout()
         {
             HttpContext.Session.Clear();
-            return RedirectToAction("Index", "Home");
+            return RedirectToAction(nameof(Login));
         }
     }
 }
